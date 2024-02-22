@@ -61,7 +61,7 @@ class Simulator:
 
         return count
 
-    def simulate(self) -> Grid:
+    def simulate(self) -> str:
         new_grid = Grid(self._grid.width, self._grid.height)
         for (y, x), value in self._grid:
             n = self.get_neighbour_count(y, x)
@@ -79,21 +79,20 @@ class Simulator:
                     new_grid.grid[y][x] = 1
 
         self._grid = new_grid
-        return new_grid
+        return str(new_grid)
 
 
 class ConsoleRenderer:
-    def __init__(self, stdscr, render: Callable, timeout: float) -> None:
+    def __init__(self, stdscr, render: Callable[[], str], timeout: float) -> None:
         curses.curs_set(0)
         self.stdscr = stdscr
         self.render = render
         self.timeout = timeout
 
     def draw(self) -> None:
-        self.stdscr.clear()
         while True:
             self.stdscr.clear()
-            self.stdscr.addstr(str(self.render()))
+            self.stdscr.addstr(self.render())
             self.stdscr.refresh()
             time.sleep(self.timeout)
 
