@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Generator
+from typing import Callable, Generator, Self
 from pathlib import Path
 import curses
 import time
@@ -31,10 +31,17 @@ class Grid:
         ]
         return g
 
+    def add_pattern(self, pattern: Pattern) -> Self:
+        for i_r, rows in enumerate(pattern.pattern):
+            for i_c, cols in enumerate(rows):
+                self.grid[i_r][i_c] = int(cols.replace(".", "0").replace("x", "1"))
+
+        return self
+
     def __str__(self) -> str:
         return "\n".join(
             [
-                " ".join([str(j).replace("0", ".").replace("1", "#") for j in i])
+                " ".join([str(j).replace("0", "·").replace("1", "■") for j in i])
                 for i in self.grid
             ]
         )
@@ -83,25 +90,39 @@ class Simulator:
 
 
 class ConsoleRenderer:
-    def __init__(self, stdscr, render: Callable[[], str], timeout: float) -> None:
+    def __init__(
+        self, stdscr: curses._CursesWindow, render: Callable[[], str], timeout: float
+    ) -> None:
         curses.curs_set(0)
         self.stdscr = stdscr
-        self.render = render
         self.timeout = timeout
+        self.render = render
 
     def draw(self) -> None:
+        next_time = time.time() + self.timeout
         while True:
             self.stdscr.clear()
             self.stdscr.addstr(self.render())
+            self.stdscr.border()
             self.stdscr.refresh()
-            time.sleep(self.timeout)
+
+            current_time = time.time()
+            sleep_time = max(0, next_time - current_time)
+            time.sleep(sleep_time)
+
+            next_time += self.timeout
+
+            if current_time > next_time:
+                next_time = current_time + self.timeout
 
 
 def main(stdscr):
     pattern = Pattern(Path(__file__).parent / "patterns/pattern_01.txt")
-    grid = Grid.from_pattern(pattern)
+    h, w = stdscr.getmaxyx()
+    grid = Grid(w // 2, h)
+    grid.add_pattern(pattern)
     sim = Simulator(grid)
-    renderer = ConsoleRenderer(stdscr, sim.simulate, 0.25)
+    renderer = ConsoleRenderer(stdscr, sim.simulate, 0.1)
     renderer.draw()
 
 
