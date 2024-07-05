@@ -1,4 +1,0 @@
-[tool.pyright]
-executionEnvironments = [
-  { root = "game-fo-life" }
-]
