@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import pygame
 
-from .objects import Grid
+from .objects import Grid, State
 
 
 class Game(ABC):
@@ -41,7 +41,7 @@ class GameOfLife(Game):
         random_fill=False,
         grid_size: tuple[int, int] = (50, 50),
     ) -> None:
-        self._is_paused = True
+        self.state = State.Drawing
         self.sim_fps = sim_fps
         self.pause_fps = pause_fps
         self.random_fill = random_fill
@@ -62,7 +62,7 @@ class GameOfLife(Game):
             self._check_pause()
 
             self.screen.fill(self.bg_color)
-            self.grid.draw(self._is_paused)
+            self.grid.draw(self.state)
 
             pygame.display.flip()
             self.dt = self.clock.tick(self.fps) / 1000
@@ -73,15 +73,13 @@ class GameOfLife(Game):
                 self.running = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
-                self.grid.update_collided_rect(mouse_pos)
+                self.grid.update_collided_rect(event.pos)
 
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self._is_paused = not self._is_paused
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                self.state = State.toggle(self.state)
 
     def _check_pause(self):
-        if self._is_paused:
+        if self.state == State.Drawing:
             self.bg_color = (200, 100, 40)
             self.fps = self.pause_fps
         else:
